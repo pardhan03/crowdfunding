@@ -1,34 +1,58 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useEffect, useState } from 'react'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+const App = () => {
+  const [walletAddress, setWalletAddress] = useState(null)
+
+const checkIfWalletIsConnected = async () => {
+    try {
+      const { solana } = window
+      if (solana) {
+        if(solana?.isPhantom){
+          const res = await solana.connect({ onlyIfTrusted: true });
+          console.log(`Connected with Public Key: ${res.publicKey.toString()}`);
+          setWalletAddress(res.publicKey.toString());
+        }
+      } else {
+        alert('Solana object not found! Get a Phantom wallet');
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  const connectWallet = async () => {
+    const { solana } = window;
+    if (solana) {
+      try {
+        const res = await solana.connect();
+        console.log('Wallet connected:', res.publicKey.toString());
+        setWalletAddress(res.publicKey.toString());
+      } catch (err) {
+        console.error('User rejected connection:', err);
+      }
+    }
+  }
+
+  const renderNotConnectedContainer = () => (
+    <button onClick={connectWallet}>Connect to Wallet</button>
+  )
+
+  useEffect(() => {
+    const onLoad = async () => {
+      await checkIfWalletIsConnected();
+    }
+    window.addEventListener('load', onLoad);
+
+    return () => {
+      window.removeEventListener('load', onLoad)
+    }
+  }, []);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div>
+      {!walletAddress && renderNotConnectedContainer()}
+    </div>
   )
 }
 
